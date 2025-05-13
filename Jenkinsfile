@@ -15,6 +15,13 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/donetrmm/node-healthcheck.git'
             }
         }
+        stage('Check Node') {
+            steps {
+                sh 'which node'
+                sh 'node -v'
+                sh 'npm -v'
+            }
+        }
 
         stage('Build') {
             steps {
