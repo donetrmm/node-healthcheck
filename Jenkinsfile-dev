@@ -12,37 +12,68 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: "${GIT_BRANCH}", url: 'git@github.com:donetrmm/node-healthcheck.git'
+                git branch: "${GIT_BRANCH}", 
+                    url: 'git@github.com:donetrmm/node-healthcheck.git'
+            }
+        }
+
+        stage('Verificar Servidor') {
+            steps {
+                sshagent(['ssh-key-ec2']) {
+                    // Verificar si hay requisitos previos instalados
+                    sh '''
+                    # Usar -n para prevenir el bloqueo cuando StrictHostKeyChecking=no
+                    SSH_OPTIONS="-o StrictHostKeyChecking=no -o ConnectTimeout=5"
+                    
+                    # Verificar conexión
+                    ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "echo 'Conexión exitosa'"
+                    
+                    # Verificar Node.js
+                    if ! ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "command -v node"; then
+                        echo "❌ Node.js no está instalado. Instalando..."
+                        ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt install -y nodejs"
+                    fi
+                    
+                    # Verificar PM2
+                    if ! ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "command -v pm2"; then
+                        echo "❌ PM2 no está instalado. Instalando..."
+                        ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "sudo npm install -g pm2"
+                    fi
+                    
+                    # Verificar directorio
+                    if ! ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "[ -d '$REMOTE_PATH' ]"; then
+                        echo "⚠️ El directorio $REMOTE_PATH no existe. Creándolo..."
+                        ssh $SSH_OPTIONS $EC2_USER@$EC2_IP "mkdir -p $REMOTE_PATH"
+                    fi
+                    '''
+                }
             }
         }
 
         stage('Deploy to Remote') {
             steps {
-                sh '''
-                ssh -i $SSH_KEY -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP << 'ENDSSH'
-                    if ! command -v node &> /dev/null; then
-                        echo "❌ Node.js no está instalado. Instálalo manualmente y presiona Enter para continuar..."
-                        read
-                    fi
-
-                    if ! command -v pm2 &> /dev/null; then
-                        echo "❌ PM2 no está instalado. Instálalo manualmente con 'npm install -g pm2' y presiona Enter para continuar..."
-                        read
-                    fi
-
-                    if [ ! -d "$REMOTE_PATH" ]; then
-                        echo "⚠️ El directorio $REMOTE_PATH no existe. Clónalo manualmente y presiona Enter para continuar..."
-                        read
-                    fi
-
-                    cd $REMOTE_PATH &&
-                    git checkout $GIT_BRANCH &&
-                    git pull origin $GIT_BRANCH &&
-                    npm ci &&
-                    pm2 restart health-api || pm2 start server.js --name health-api
-                ENDSSH
-                '''
+                sshagent(['ssh-key-ec2']) {
+                    sh '''
+                    # Actualizar repositorio en servidor remoto
+                    ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP "cd $REMOTE_PATH && git fetch && git checkout $GIT_BRANCH && git pull origin $GIT_BRANCH" || {
+                        # Si falló, tal vez no existe el repo, clonamos
+                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP "rm -rf $REMOTE_PATH && git clone git@github.com:donetrmm/node-healthcheck.git $REMOTE_PATH && cd $REMOTE_PATH && git checkout $GIT_BRANCH"
+                    }
+                    
+                    # Instalar dependencias y reiniciar app
+                    ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP "cd $REMOTE_PATH && npm ci && pm2 restart health-api || pm2 start server.js --name health-api"
+                    '''
+                }
             }
+        }
+    }
+    
+    post {
+        success {
+            echo "✅ Deployment to DEV successful!"
+        }
+        failure {
+            echo "❌ Deployment to DEV failed!"
         }
     }
 }
