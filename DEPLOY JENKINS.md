@@ -1,7 +1,7 @@
 
 ## 1. Configuración de los servidores de despliegue (Servidores 1, 2 y 3)
 
-### 1.1. Instalación de dependencias
+### 1.1. Instalación de dependencias (Omitir para esta versión del Jenkinsfile)
 
 Ejecuta estos comandos en cada uno de los tres servidores de despliegue:
 
@@ -27,7 +27,7 @@ npm install -g pm2
 sudo apt install -y git
 ```
 
-### 1.2. Crear usuario para despliegue (opcional pero recomendado)
+### 1.2. Crear usuario para despliegue (opcional pero recomendado) (Omitir para esta versión del Jenkinsfile)
 
 Si deseas usar un usuario específico para despliegue:
 
