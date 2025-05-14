@@ -26,7 +26,7 @@ pipeline {
                 sh 'npm ci'
             }
         }
-        
+             
         stage('Deploy') {
             steps {
                 script {
@@ -46,10 +46,10 @@ pipeline {
                     }
                     
                     // Desplegar en el servidor correspondiente
-                    sshagent(['server-ssh-key']) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'server-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                         // Verificar si el directorio existe, si no, crearlo y clonar
                         sh """
-                            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
                                 if [ ! -d ${APP_DIR} ]; then
                                     mkdir -p ${APP_DIR}
                                     cd ${APP_DIR}
