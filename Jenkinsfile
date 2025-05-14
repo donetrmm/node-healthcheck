@@ -47,7 +47,6 @@ pipeline {
                     
                     // Desplegar en el servidor correspondiente
                     withCredentials([sshUserPrivateKey(credentialsId: 'server-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-                        // Verificar si el directorio existe, si no, crearlo y clonar
                         sh """
                             ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
                                 # Cargar NVM y Node.js para asegurar que estén disponibles
