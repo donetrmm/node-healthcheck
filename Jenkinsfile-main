@@ -19,7 +19,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'rm -rf node_modules'
-                sh '/home/ubuntu/.nvm/versions/node/v22.15.0/bin/npm ci'
+                sh 'npm ci'
             }
         }
 
@@ -29,7 +29,7 @@ pipeline {
                 ssh -i $SSH_KEY -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP '
                     cd $REMOTE_PATH &&
                     git pull origin main &&
-                    /home/ubuntu/.nvm/versions/node/v22.15.0/bin/npm ci &&
+                    npm ci &&
                     pm2 restart health-api || pm2 start server.js --name health-api
                 '
                 """
