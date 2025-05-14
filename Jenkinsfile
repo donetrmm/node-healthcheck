@@ -10,8 +10,8 @@ pipeline {
         SERVER_DEV = '54.86.104.168'  // IP del servidor 1
         SERVER_QA = '54.235.214.15'   // IP del servidor 2
         SERVER_PROD = '54.221.226.38' // IP del servidor 3
-        DEPLOY_USER = 'deployment'    // Usuario para SSH
-        APP_DIR = '/home/deployment/node-healthcheck'
+        DEPLOY_USER = 'ubuntu'    // Usuario para SSH
+        APP_DIR = '/home/ubuntu/node-healthcheck'
     }
     
     stages {
