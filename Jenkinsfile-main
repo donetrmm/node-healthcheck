@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    environment {
+        EC2_USER = 'ubuntu'
+        EC2_IP = '54.221.226.38'
+        REMOTE_PATH = '/home/ubuntu/node-healthcheck'
+        SSH_KEY = credentials('ssh-key-ec2')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/donetrmm/node-healthcheck.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'rm -rf node_modules'
+                sh 'npm ci'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''#!/bin/bash
+                ssh -i $SSH_KEY -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP << 'ENDSSH'
+                    if ! command -v pm2 &> /dev/null
+                    then
+                        echo "❌ PM2 no está instalado en $EC2_IP"
+                        exit 1
+                    fi
+                    cd $REMOTE_PATH &&
+                    git pull origin main &&
+                    npm ci &&
+                    pm2 restart health-api || pm2 start server.js --name health-api
+                ENDSSH
+                '''
+            }
+        }
+    }
+}
