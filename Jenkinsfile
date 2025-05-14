@@ -2,37 +2,34 @@ pipeline {
     agent any
 
     environment {
-        NODE_ENV = 'production'
-        EC2_USER = 'ubuntu'
-        EC2_IP = '44.214.199.75'
-        REMOTE_PATH = '/home/ubuntu/node-healthcheck'
-        SSH_KEY = credentials('ssh-key-ec2')
+        DEPLOY_SERVER = 'ec2-ubuntu@54.221.226.38'
+        SSH_KEY = credentials('id_rsa_jenkins')
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clonar Repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/donetrmm/node-healthcheck.git'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh 'rm -rf node_modules'
-                sh 'npm ci'
+                checkout scm
             }
         }
 
         stage('Deploy') {
             steps {
-                sh """
-                ssh -i $SSH_KEY -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP '
-                    cd $REMOTE_PATH &&
-                    git pull origin main &&
-                    npm ci &&
-                    pm2 restart health-api || pm2 start server.js --name health-api
-                '
-                """
+                sshagent(['id_rsa_jenkins']) {
+                    sh """
+                    echo "Deploying branch: ${env.BRANCH_NAME}"
+
+                    if [ "${env.BRANCH_NAME}" = "dev" ]; then
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER "bash ~/deploy-dev.sh"
+                    elif [ "${env.BRANCH_NAME}" = "qa" ]; then
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER "bash ~/deploy-qa.sh"
+                    elif [ "${env.BRANCH_NAME}" = "main" ]; then
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER "bash ~/deploy-main.sh"
+                    else
+                        echo "No deployment configured for this branch"
+                    fi
+                    """
+                }
             }
         }
     }
