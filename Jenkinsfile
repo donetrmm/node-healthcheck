@@ -71,6 +71,17 @@ pipeline {
 
                                 # Instalar Git
                                 sudo apt install -y git
+
+                                # Como usuario ubuntu
+                                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+                                source ~/.bashrc
+                                nvm install --lts
+                                npm install -g pm2
+
+                                # Verificar instalaciones
+                                node --version
+                                npm --version
+                                pm2 --version
                                 
                                 # Cargar NVM y Node.js para asegurar que estén disponibles
                                 export NVM_DIR="\$HOME/.nvm"
