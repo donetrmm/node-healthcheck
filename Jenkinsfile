@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_SERVER = 'ec2-ubuntu@54.221.226.38'
-        SSH_KEY = credentials('id_rsa_jenkins')
+        SSH_KEY = credentials('ssh-key-ec2')
     }
 
     stages {
@@ -15,7 +15,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(['id_rsa_jenkins']) {
+                sshagent(['ssh-key-ec2']) {
                     sh """
                     echo "Deploying branch: ${env.BRANCH_NAME}"
 
