@@ -53,24 +53,7 @@ pipeline {
                         sh """
                             ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
                                 # Actualizar repositorios
-                                sudo apt update
-
-                                # Instalar NVM (Node Version Manager)
-                                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-                                source ~/.bashrc
-
-                                # Instalar Node.js (versión LTS)
-                                nvm install --lts
-
-                                # Verificar instalación
-                                node --version
-                                npm --version
-
-                                # Instalar PM2 globalmente
-                                npm install -g pm2
-
-                                # Instalar Git
-                                sudo apt install -y git
+                                sudo apt update && sudo apt upgrade -y
 
                                 # Como usuario ubuntu
                                 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
@@ -82,7 +65,10 @@ pipeline {
                                 node --version
                                 npm --version
                                 pm2 --version
-                                
+
+                                sudo apt install -y git
+
+
                                 # Cargar NVM y Node.js para asegurar que estén disponibles
                                 export NVM_DIR="\$HOME/.nvm"
                                 [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
