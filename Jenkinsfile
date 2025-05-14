@@ -50,6 +50,15 @@ pipeline {
                         // Verificar si el directorio existe, si no, crearlo y clonar
                         sh """
                             ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${DEPLOY_USER}@${targetServer} '
+                                # Cargar NVM y Node.js para asegurar que estén disponibles
+                                export NVM_DIR="\$HOME/.nvm"
+                                [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
+                                
+                                # Instalar PM2 si no está disponible
+                                if ! command -v pm2 &> /dev/null; then
+                                    npm install -g pm2
+                                fi
+                                
                                 if [ ! -d ${APP_DIR} ]; then
                                     mkdir -p ${APP_DIR}
                                     cd ${APP_DIR}
@@ -62,8 +71,14 @@ pipeline {
                                     git pull origin ${targetBranch}
                                 fi
                                 
+                                # Ejecutar comandos npm asegurándose que Node.js está en el PATH
                                 npm ci
-                                npm run build
+                                # Revisar si existe script build antes de ejecutarlo
+                                if grep -q '"build"' package.json; then
+                                    npm run build
+                                else
+                                    echo "No hay script de build en package.json, omitiendo este paso"
+                                fi
                                 
                                 # Reiniciar con PM2
                                 if pm2 list | grep -q "node-healthcheck"; then
