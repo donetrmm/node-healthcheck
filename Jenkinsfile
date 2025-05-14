@@ -41,7 +41,7 @@ pipeline {
                         targetServer = env.SERVER_QA
                     } else if (targetBranch == 'main') {
                         targetServer = env.SERVER_PROD
-                    } else if{
+                    } else if (targetBranch == "staging") {
                         targetServer = env.SERVER_STAGING
                     } else {
                         echo "No se desplegará la rama: ${targetBranch}"
