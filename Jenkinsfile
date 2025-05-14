@@ -55,56 +55,85 @@ pipeline {
                                 # Actualizar repositorios
                                 sudo apt update && sudo apt upgrade -y
 
-                                # Como usuario ubuntu
-                                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-                                source ~/.bashrc
-                                nvm install --lts
-                                npm install -g pm2
-
-                                # Verificar instalaciones
-                                node --version
-                                npm --version
-                                pm2 --version
-
-                                sudo apt install -y git
-
-
-                                # Cargar NVM y Node.js para asegurar que estén disponibles
+                                # Instalación de NVM y Node
                                 export NVM_DIR="\$HOME/.nvm"
-                                [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
                                 
-                                # Instalar PM2 si no está disponible
-                                if ! command -v pm2 &> /dev/null; then
-                                    npm install -g pm2
+                                # Instalar NVM si no existe
+                                if [ ! -d "\$NVM_DIR" ]; then
+                                    echo "Instalando NVM..."
+                                    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
                                 fi
                                 
+                                # Cargar NVM
+                                [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
+                                [ -s "\$NVM_DIR/bash_completion" ] && \\. "\$NVM_DIR/bash_completion"
+                                
+                                # Instalar Node LTS
+                                echo "Instalando Node.js LTS..."
+                                nvm install --lts
+                                nvm use --lts
+                                
+                                # Verificar versiones
+                                echo "Versión de Node.js:"
+                                node --version
+                                echo "Versión de NPM:"
+                                npm --version
+                                
+                                # Instalar PM2 globalmente
+                                echo "Instalando PM2..."
+                                npm install -g pm2
+                                echo "Versión de PM2:"
+                                pm2 --version
+                                
+                                # Instalar Git si no está presente
+                                if ! command -v git &> /dev/null; then
+                                    sudo apt install -y git
+                                fi
+
+                                # Clonar o actualizar repositorio
                                 if [ ! -d ${APP_DIR} ]; then
+                                    echo "Clonando repositorio..."
                                     mkdir -p ${APP_DIR}
                                     cd ${APP_DIR}
                                     git clone https://github.com/donetrmm/node-healthcheck.git .
                                     git checkout ${targetBranch}
                                 else
+                                    echo "Actualizando repositorio..."
                                     cd ${APP_DIR}
                                     git fetch --all
                                     git checkout ${targetBranch}
                                     git pull origin ${targetBranch}
                                 fi
                                 
-                                # Ejecutar comandos npm asegurándose que Node.js está en el PATH
+                                # Asegurar que NVM está cargado para cada comando
+                                export NVM_DIR="\$HOME/.nvm"
+                                [ -s "\$NVM_DIR/nvm.sh" ] && \\. "\$NVM_DIR/nvm.sh"
+                                nvm use --lts
+                                
+                                echo "Instalando dependencias..."
                                 npm ci
+                                
                                 # Revisar si existe script build antes de ejecutarlo
-                                if grep -q '"build"' package.json; then
+                                if grep -q "\\\"build\\\"" package.json; then
+                                    echo "Ejecutando build..."
                                     npm run build
                                 else
                                     echo "No hay script de build en package.json, omitiendo este paso"
                                 fi
                                 
                                 # Reiniciar con PM2
+                                echo "Configurando PM2..."
                                 if pm2 list | grep -q "node-healthcheck"; then
+                                    echo "Reiniciando aplicación con PM2..."
                                     pm2 restart node-healthcheck
                                 else
+                                    echo "Iniciando aplicación con PM2 por primera vez..."
                                     pm2 start npm --name "node-healthcheck" -- start
                                 fi
+                                
+                                # Guardar configuración de PM2
+                                echo "Guardando configuración de PM2..."
+                                pm2 save
                             '
                         """
                     }
