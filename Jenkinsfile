@@ -10,6 +10,7 @@ pipeline {
         SERVER_DEV = '54.86.104.168'  // IP del servidor 1
         SERVER_QA = '54.235.214.15'   // IP del servidor 2
         SERVER_PROD = '54.221.226.38' // IP del servidor 3
+        SERVER_STAGING = '54.92.219.132'
         DEPLOY_USER = 'ubuntu'    // Usuario para SSH
         APP_DIR = '/home/ubuntu/node-healthcheck'
     }
@@ -40,6 +41,8 @@ pipeline {
                         targetServer = env.SERVER_QA
                     } else if (targetBranch == 'main') {
                         targetServer = env.SERVER_PROD
+                    } else if{
+                        targetServer = env.SERVER_STAGING
                     } else {
                         echo "No se desplegará la rama: ${targetBranch}"
                         return
