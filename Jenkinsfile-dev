@@ -6,33 +6,38 @@ pipeline {
         EC2_IP = '54.86.104.168'
         REMOTE_PATH = '/home/ubuntu/node-healthcheck'
         SSH_KEY = credentials('ssh-key-ec2')
+        GIT_BRANCH = 'dev'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'dev', url: 'https://github.com/donetrmm/node-healthcheck.git'
+                git branch: "${GIT_BRANCH}", url: 'git@github.com:donetrmm/node-healthcheck.git'
             }
         }
 
-        stage('Build') {
+        stage('Deploy to Remote') {
             steps {
-                sh 'rm -rf node_modules'
-                sh 'npm ci'
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh '''#!/bin/bash
+                sh '''
                 ssh -i $SSH_KEY -o StrictHostKeyChecking=no $EC2_USER@$EC2_IP << 'ENDSSH'
-                    if ! command -v pm2 &> /dev/null
-                    then
-                        echo "❌ PM2 no está instalado en $EC2_IP"
-                        exit 1
+                    if ! command -v node &> /dev/null; then
+                        echo "❌ Node.js no está instalado. Instálalo manualmente y presiona Enter para continuar..."
+                        read
                     fi
+
+                    if ! command -v pm2 &> /dev/null; then
+                        echo "❌ PM2 no está instalado. Instálalo manualmente con 'npm install -g pm2' y presiona Enter para continuar..."
+                        read
+                    fi
+
+                    if [ ! -d "$REMOTE_PATH" ]; then
+                        echo "⚠️ El directorio $REMOTE_PATH no existe. Clónalo manualmente y presiona Enter para continuar..."
+                        read
+                    fi
+
                     cd $REMOTE_PATH &&
-                    git pull origin dev &&
+                    git checkout $GIT_BRANCH &&
+                    git pull origin $GIT_BRANCH &&
                     npm ci &&
                     pm2 restart health-api || pm2 start server.js --name health-api
                 ENDSSH
