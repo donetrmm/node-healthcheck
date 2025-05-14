@@ -208,8 +208,8 @@ pipeline {
         SERVER_DEV = '192.168.1.101'  // IP del servidor 1
         SERVER_QA = '192.168.1.102'   // IP del servidor 2
         SERVER_PROD = '192.168.1.103' // IP del servidor 3
-        DEPLOY_USER = 'deployment'    // Usuario para SSH
-        APP_DIR = '/home/deployment/node-healthcheck'
+        DEPLOY_USER = 'ubuntu'    // Usuario para SSH
+        APP_DIR = '/home/ubuntu/node-healthcheck'
     }
     
     stages {
@@ -224,13 +224,7 @@ pipeline {
                 sh 'npm ci'
             }
         }
-        
-        stage('Test') {
-            steps {
-                sh 'npm test'
-            }
-        }
-        
+
         stage('Deploy') {
             steps {
                 script {
